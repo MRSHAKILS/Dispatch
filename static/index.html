@@ -3,335 +3,692 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dispatch — Support Ticket Triage</title>
+<title>Dispatch — Triage Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #0b0f17;
-    --panel: #121826;
-    --panel-2: #161d2e;
-    --line: #243044;
-    --text: #e7ecf3;
-    --muted: #93a0b5;
-    --accent: #e2136e;        /* bKash magenta */
-    --accent-soft: rgba(226, 19, 110, 0.14);
-    --ok: #2ecf8f;
-    --low: #2ecf8f;
-    --medium: #f2c14e;
-    --high: #f08a3c;
-    --critical: #ff5a5f;
-    --radius: 14px;
-    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    --bg:        #06080f;
+    --bg-soft:   #090d17;
+    --surface:   #0d1320;
+    --surface-2: #111a2b;
+    --surface-3: #16213600;
+    --hair:      rgba(255,255,255,.07);
+    --hair-2:    rgba(255,255,255,.12);
+    --text:      #eef2f8;
+    --text-2:    #a7b3c7;
+    --text-3:    #69768d;
+    --accent:    #e2136e;
+    --accent-2:  #ff64a8;
+    --accent-glow: rgba(226,19,110,.40);
+    --cyan:      #4cc9f0;
+    --low:       #34d399;
+    --medium:    #fbbf24;
+    --high:      #fb923c;
+    --critical:  #fb5a6a;
+    --radius:    18px;
+    --radius-sm: 11px;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --ease: cubic-bezier(.22,.7,.25,1);
+    --shadow: 0 24px 60px -20px rgba(0,0,0,.6);
   }
+
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
   body {
     margin: 0;
-    background: radial-gradient(1200px 700px at 80% -10%, #18213a 0%, var(--bg) 55%);
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     color: var(--text);
-    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
     min-height: 100vh;
+    overflow-x: hidden;
   }
-  a { color: var(--accent); text-decoration: none; }
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 22px 64px; }
 
-  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-  .brand { display: flex; align-items: center; gap: 14px; }
-  .logo {
-    width: 44px; height: 44px; border-radius: 12px; flex: none;
-    background: linear-gradient(135deg, var(--accent), #ff5fa2);
-    display: grid; place-items: center; font-weight: 800; font-size: 22px; color: #fff;
-    box-shadow: var(--shadow);
+  /* ---- ambient background ---- */
+  .bg { position: fixed; inset: 0; z-index: -2; overflow: hidden; pointer-events: none; }
+  .bg::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(40rem 30rem at 12% -8%, rgba(226,19,110,.16), transparent 60%),
+      radial-gradient(36rem 28rem at 100% 0%, rgba(76,201,240,.12), transparent 55%),
+      radial-gradient(40rem 40rem at 60% 120%, rgba(124,58,237,.10), transparent 60%);
+    animation: drift 22s var(--ease) infinite alternate;
   }
-  .brand h1 { font-size: 20px; margin: 0; letter-spacing: 0.2px; }
-  .brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
-  .status {
-    display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted);
-    background: var(--panel); border: 1px solid var(--line); padding: 8px 12px; border-radius: 999px;
+  .bg::after {
+    content: ""; position: absolute; inset: -2px;
+    background-image:
+      linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: radial-gradient(ellipse 90% 70% at 50% 25%, #000 30%, transparent 78%);
   }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
-  .dot.up { background: var(--ok); box-shadow: 0 0 0 4px rgba(46, 207, 143, 0.16); }
-  .dot.down { background: var(--critical); box-shadow: 0 0 0 4px rgba(255, 90, 95, 0.16); }
+  @keyframes drift { to { transform: translate3d(-3%, 2%, 0) scale(1.08); } }
 
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; }
-  @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+  a { color: inherit; text-decoration: none; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px 80px; }
 
-  .card {
-    background: var(--panel); border: 1px solid var(--line);
-    border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px; margin: 0 -24px 6px;
+    backdrop-filter: blur(14px);
+    background: linear-gradient(180deg, rgba(6,8,15,.82), rgba(6,8,15,.45));
+    border-bottom: 1px solid var(--hair);
   }
-  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin: 0 0 16px; }
-
-  label { display: block; font-size: 12px; color: var(--muted); margin: 14px 0 6px; }
-  textarea, input, select {
-    width: 100%; background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
-    border-radius: 10px; padding: 11px 12px; font-size: 14px; font-family: inherit; outline: none;
+  .brand { display: flex; align-items: center; gap: 13px; }
+  .mark {
+    width: 40px; height: 40px; border-radius: 12px; flex: none; position: relative;
+    background: linear-gradient(140deg, var(--accent), #ff7eb6);
+    box-shadow: 0 6px 22px -6px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,.4);
+    display: grid; place-items: center;
   }
-  textarea:focus, input:focus, select:focus { border-color: var(--accent); }
-  textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
-  .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-  @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
-
-  .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
-  .chip {
-    cursor: pointer; font-size: 12px; color: var(--text);
-    background: var(--panel-2); border: 1px solid var(--line);
-    padding: 7px 11px; border-radius: 999px; transition: 0.15s;
+  .mark svg { width: 22px; height: 22px; stroke: #fff; }
+  .brand .name { font-size: 18px; font-weight: 800; letter-spacing: -.2px; line-height: 1; }
+  .brand .tag {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 2.5px; color: var(--text-3);
+    text-transform: uppercase; margin-top: 5px;
   }
-  .chip:hover { border-color: var(--accent); color: #fff; }
-
-  .btn {
-    margin-top: 18px; width: 100%; cursor: pointer; border: none;
-    background: linear-gradient(135deg, var(--accent), #ff4f97); color: #fff;
-    font-size: 15px; font-weight: 600; padding: 13px; border-radius: 11px; transition: 0.15s;
+  .topbar .right { display: flex; align-items: center; gap: 12px; }
+  .health {
+    display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: var(--text-2);
+    padding: 8px 13px; border-radius: 999px; border: 1px solid var(--hair);
+    background: rgba(255,255,255,.02);
   }
-  .btn:hover { filter: brightness(1.07); }
-  .btn:disabled { opacity: 0.6; cursor: progress; }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); position: relative; }
+  .pulse.up { background: var(--low); }
+  .pulse.down { background: var(--critical); }
+  .pulse.up::after {
+    content: ""; position: absolute; inset: -4px; border-radius: 50%;
+    border: 2px solid var(--low); animation: ping 1.8s var(--ease) infinite; opacity: 0;
+  }
+  @keyframes ping { 0% { transform: scale(.6); opacity: .8; } 100% { transform: scale(2.2); opacity: 0; } }
+  .ghost-btn {
+    font-size: 13px; color: var(--text-2); padding: 8px 14px; border-radius: 999px;
+    border: 1px solid var(--hair); transition: .2s var(--ease);
+  }
+  .ghost-btn:hover { color: #fff; border-color: var(--hair-2); background: rgba(255,255,255,.03); }
 
-  .empty { color: var(--muted); font-size: 14px; line-height: 1.6; text-align: center; padding: 40px 10px; }
+  /* ---------- hero ---------- */
+  .hero { padding: 38px 4px 26px; max-width: 720px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--accent-2); display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  }
+  .eyebrow::before { content: ""; width: 22px; height: 1px; background: var(--accent); }
+  .hero h1 { margin: 0; font-size: clamp(28px, 4vw, 42px); font-weight: 800; letter-spacing: -1px; line-height: 1.06; }
+  .hero h1 .grad { background: linear-gradient(100deg, var(--accent-2), var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { color: var(--text-2); font-size: 15.5px; line-height: 1.6; margin: 16px 0 0; max-width: 580px; }
+
+  /* ---------- stat tiles ---------- */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 26px 0 30px; }
+  .stat {
+    border: 1px solid var(--hair); border-radius: var(--radius-sm); padding: 16px 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,0));
+    position: relative; overflow: hidden;
+  }
+  .stat .label { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-3); }
+  .stat .val { font-size: 30px; font-weight: 800; margin-top: 8px; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+  .stat .spark { position: absolute; right: 14px; top: 14px; opacity: .5; }
+
+  /* ---------- workspace grid ---------- */
+  .grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 20px; align-items: start; }
+  @media (max-width: 940px) { .grid, .stats { grid-template-columns: 1fr; } }
+
+  .panel {
+    border: 1px solid var(--hair); border-radius: var(--radius); background: var(--surface);
+    box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .panel::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+  }
+  .panel-h {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 17px 20px; border-bottom: 1px solid var(--hair);
+  }
+  .panel-h .t { font-size: 12px; font-weight: 600; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-2); display: flex; align-items: center; gap: 9px; }
+  .panel-h .t .ic { width: 15px; height: 15px; color: var(--accent-2); }
+  .kbd { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); border: 1px solid var(--hair); border-radius: 6px; padding: 3px 7px; }
+  .panel-b { padding: 20px; }
+
+  /* ---------- sample tickets ---------- */
+  .field-label { font-size: 11px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-3); margin: 0 0 10px; }
+  .samples { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 22px; }
+  .sample {
+    text-align: left; cursor: pointer; border: 1px solid var(--hair); border-radius: var(--radius-sm);
+    background: var(--surface-2); padding: 11px 12px; display: flex; gap: 10px; align-items: center;
+    transition: .18s var(--ease); color: var(--text);
+  }
+  .sample:hover { transform: translateY(-2px); border-color: var(--hair-2); background: #15203400; box-shadow: 0 10px 24px -16px #000; }
+  .sample .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .sample .s-txt { font-size: 12.5px; color: var(--text-2); line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+  /* ---------- segmented controls ---------- */
+  .seg { display: inline-flex; padding: 4px; gap: 4px; background: var(--surface-2); border: 1px solid var(--hair); border-radius: 12px; flex-wrap: wrap; }
+  .seg button {
+    border: none; background: transparent; color: var(--text-2); cursor: pointer;
+    font: inherit; font-size: 12.5px; padding: 7px 13px; border-radius: 8px; transition: .18s var(--ease);
+  }
+  .seg button:hover { color: #fff; }
+  .seg button.on { background: var(--accent); color: #fff; box-shadow: 0 6px 16px -8px var(--accent-glow); }
+  .two-col { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: end; margin-bottom: 18px; }
+  @media (max-width: 520px) { .two-col { grid-template-columns: 1fr; } }
+
+  input[type=text], textarea {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--hair); color: var(--text);
+    border-radius: var(--radius-sm); padding: 12px 13px; font: inherit; font-size: 14px; outline: none;
+    transition: .18s var(--ease);
+  }
+  input[type=text] { font-family: var(--mono); letter-spacing: .5px; }
+  textarea { min-height: 122px; resize: vertical; line-height: 1.55; }
+  input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background: #131d2f00; }
+  .ta-wrap { position: relative; }
+  .counter { position: absolute; right: 12px; bottom: 10px; font-family: var(--mono); font-size: 10.5px; color: var(--text-3); }
+
+  .cta {
+    margin-top: 18px; width: 100%; cursor: pointer; border: none; color: #fff;
+    background: linear-gradient(135deg, var(--accent), #ff4f97); font-size: 15px; font-weight: 700;
+    padding: 14px; border-radius: var(--radius-sm); position: relative; overflow: hidden;
+    transition: .2s var(--ease); box-shadow: 0 14px 30px -14px var(--accent-glow);
+  }
+  .cta:hover { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 18px 36px -14px var(--accent-glow); }
+  .cta:active { transform: translateY(0); }
+  .cta[disabled] { cursor: progress; opacity: .85; }
+  .cta .spin { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; display: none; animation: spin .7s linear infinite; vertical-align: -3px; margin-right: 8px; }
+  .cta.loading .spin { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- result panel ---------- */
+  .res-body { min-height: 360px; padding: 22px; position: relative; }
+
+  .empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 320px; text-align: center; gap: 18px; }
+  .scope { width: 92px; height: 92px; position: relative; }
+  .scope svg { width: 100%; height: 100%; }
+  .scope .sweep { transform-origin: 46px 46px; animation: sweep 3.2s linear infinite; }
+  @keyframes sweep { to { transform: rotate(360deg); } }
+  .empty p { color: var(--text-3); font-size: 13.5px; line-height: 1.6; max-width: 280px; margin: 0; }
+
+  /* skeleton */
+  .skeleton { display: none; }
+  .skeleton.on { display: block; }
+  .sk { height: 16px; border-radius: 8px; margin-bottom: 14px;
+    background: linear-gradient(90deg, var(--surface-2) 25%, #1a2740 37%, var(--surface-2) 63%);
+    background-size: 400% 100%; animation: shimmer 1.3s ease infinite; }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
   .result { display: none; }
-  .result.show { display: block; animation: fade 0.25s ease; }
-  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .result.on { display: block; }
+  .anim { opacity: 0; transform: translateY(12px); animation: fadeUp .6s var(--ease) forwards; animation-delay: var(--d, 0s); }
+  @keyframes fadeUp { to { opacity: 1; transform: none; } }
 
-  .tid { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
-  .tid b { color: var(--text); font-weight: 600; }
+  .res-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .ctype { display: flex; gap: 13px; align-items: center; }
+  .ctype .icon { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; flex: none; border: 1px solid var(--hair-2); background: var(--accent-glow); }
+  .ctype .icon svg { width: 23px; height: 23px; stroke: var(--accent-2); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .ctype .meta .k { font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-3); }
+  .ctype .meta .v { font-size: 19px; font-weight: 700; margin-top: 4px; letter-spacing: -.3px; }
+  .tid-chip { font-family: var(--mono); font-size: 11px; color: var(--text-2); border: 1px solid var(--hair); border-radius: 7px; padding: 4px 8px; margin-top: 8px; display: inline-block; }
 
-  .badges { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
-  .badge { font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 9px; border: 1px solid var(--line); }
-  .badge.type { background: var(--accent-soft); border-color: rgba(226, 19, 110, 0.4); color: #ff86b9; }
-  .sev { color: #0b0f17; }
-  .sev.low { background: var(--low); }
-  .sev.medium { background: var(--medium); }
-  .sev.high { background: var(--high); }
-  .sev.critical { background: var(--critical); color: #fff; }
-  .dept { background: var(--panel-2); color: var(--text); }
+  /* confidence ring */
+  .ring { position: relative; width: 92px; height: 92px; flex: none; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring .track { fill: none; stroke: var(--surface-2); stroke-width: 8; }
+  .ring .bar { fill: none; stroke: url(#cgrad); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s var(--ease); }
+  .ring .num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring .num b { font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .ring .num span { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); margin-top: 1px; }
+
+  /* severity + review */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 4px; }
+  .sev {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700;
+    padding: 8px 13px; border-radius: 10px; letter-spacing: .4px; border: 1px solid transparent;
+  }
+  .sev .sd { width: 8px; height: 8px; border-radius: 50%; }
+  .sev[data-s=low]      { color: var(--low);      background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.3); }
+  .sev[data-s=low] .sd  { background: var(--low); }
+  .sev[data-s=medium]   { color: var(--medium);   background: rgba(251,191,36,.12); border-color: rgba(251,191,36,.3); }
+  .sev[data-s=medium] .sd{ background: var(--medium); }
+  .sev[data-s=high]     { color: var(--high);     background: rgba(251,146,60,.12); border-color: rgba(251,146,60,.3); }
+  .sev[data-s=high] .sd { background: var(--high); }
+  .sev[data-s=critical] { color: #fff; background: rgba(251,90,106,.18); border-color: rgba(251,90,106,.55); animation: critPulse 1.8s var(--ease) infinite; }
+  .sev[data-s=critical] .sd { background: var(--critical); }
+  @keyframes critPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(251,90,106,.0); } 50% { box-shadow: 0 0 0 6px rgba(251,90,106,.14); } }
 
   .review {
-    display: none; align-items: center; gap: 10px; margin-bottom: 16px;
-    background: rgba(255, 90, 95, 0.12); border: 1px solid rgba(255, 90, 95, 0.45);
-    color: #ffb3b5; padding: 11px 13px; border-radius: 10px; font-size: 13.5px;
+    display: none; align-items: center; gap: 11px; margin-top: 16px;
+    background: rgba(251,90,106,.10); border: 1px solid rgba(251,90,106,.45);
+    color: #ffc2c6; padding: 12px 14px; border-radius: 12px; font-size: 13px;
   }
-  .review.on { display: flex; }
-  .review .ico { font-size: 16px; }
+  .review.on { display: flex; animation: fadeUp .5s var(--ease) both; }
+  .review .rb { width: 26px; height: 26px; flex: none; border-radius: 8px; background: rgba(251,90,106,.2); display: grid; place-items: center; }
+  .review .rb svg { width: 15px; height: 15px; stroke: var(--critical); fill: none; stroke-width: 2; }
 
-  .field { margin-bottom: 16px; }
-  .field .k { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 6px; }
-  .field .v { font-size: 14.5px; line-height: 1.55; }
+  /* routing flow */
+  .flow { margin: 22px 0; }
+  .flow .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .node {
+    font-size: 12.5px; padding: 9px 13px; border-radius: 10px; border: 1px solid var(--hair);
+    background: var(--surface-2); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  }
+  .node small { font-family: var(--mono); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-3); display: block; }
+  .node.dest { border-color: rgba(226,19,110,.4); background: var(--accent-glow); color: #fff; }
+  .arrow { color: var(--text-3); flex: none; display: inline-flex; }
+  .arrow svg { width: 20px; height: 14px; }
+  .arrow .dash { stroke-dasharray: 4 4; animation: march 1s linear infinite; }
+  @keyframes march { to { stroke-dashoffset: -8; } }
 
-  .meter { height: 9px; background: var(--panel-2); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
-  .meter > span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), #ff7eb3); transition: width 0.5s ease; }
-  .conf-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-  .conf-row b { color: var(--text); }
+  /* summary */
+  .summary { margin-top: 22px; border-left: 2px solid var(--accent); padding: 4px 0 4px 15px; }
+  .summary .k { font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase; color: var(--text-3); margin-bottom: 7px; }
+  .summary .v { font-size: 14.5px; line-height: 1.6; color: var(--text); }
 
-  details { margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 12px; }
-  summary { cursor: pointer; font-size: 12px; color: var(--muted); }
-  pre { background: #0a0e16; border: 1px solid var(--line); border-radius: 10px; padding: 14px; overflow: auto; font-size: 12.5px; color: #c8d3e6; }
+  details { margin-top: 20px; border-top: 1px dashed var(--hair); padding-top: 14px; }
+  summary { cursor: pointer; font-size: 11.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-3); list-style: none; display: flex; align-items: center; gap: 7px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "+"; font-family: var(--mono); }
+  details[open] summary::before { content: "−"; }
+  pre { margin: 12px 0 0; background: #05070d; border: 1px solid var(--hair); border-radius: 12px; padding: 15px; overflow: auto; font-family: var(--mono); font-size: 12px; line-height: 1.55; color: #b9c6dd; }
 
-  footer { margin-top: 30px; text-align: center; color: var(--muted); font-size: 12.5px; }
-  footer a { margin: 0 8px; }
+  /* ---------- triage feed ---------- */
+  .feed-wrap { margin-top: 22px; }
+  .feed { display: flex; flex-direction: column; gap: 0; }
+  .feed-empty { color: var(--text-3); font-size: 13px; padding: 18px 0; text-align: center; }
+  .feed-row {
+    display: grid; grid-template-columns: auto 150px 1fr auto auto; gap: 14px; align-items: center;
+    padding: 13px 6px; border-bottom: 1px solid var(--hair); font-size: 13px;
+    animation: feedIn .45s var(--ease) both;
+  }
+  @keyframes feedIn { from { opacity: 0; transform: translateX(-10px); } }
+  .feed-row .fd { width: 9px; height: 9px; border-radius: 50%; }
+  .feed-row .ftype { font-weight: 600; }
+  .feed-row .fmsg { color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed-row .ftime { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+  .feed-row .fsev { font-family: var(--mono); font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; }
+  .feed-row .fflag { font-size: 11px; color: var(--critical); }
+  @media (max-width: 620px) { .feed-row { grid-template-columns: auto 1fr auto; } .feed-row .fmsg, .feed-row .ftime { display: none; } }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 80px);
+    background: #1a1020; border: 1px solid rgba(251,90,106,.5); color: #ffd2d5;
+    padding: 12px 18px; border-radius: 12px; font-size: 13.5px; z-index: 90;
+    box-shadow: var(--shadow); opacity: 0; transition: .3s var(--ease); pointer-events: none;
+  }
+  .toast.on { transform: translate(-50%, 0); opacity: 1; }
+
+  footer { margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--hair); display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; color: var(--text-3); font-size: 12.5px; }
+  footer a:hover { color: var(--accent-2); }
+  footer .sep { color: var(--hair-2); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .anim { opacity: 1; transform: none; }
+  }
 </style>
 </head>
 <body>
+  <div class="bg"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h10"/><path d="M4 19h7"/><path d="m16 16 4 3-4 3"/></svg>
+      </div>
+      <div>
+        <div class="name">Dispatch</div>
+        <div class="tag">Triage Console</div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="health"><span class="pulse" id="pulse"></span><span id="healthTxt">connecting…</span></div>
+      <a class="ghost-btn" href="/docs" target="_blank" rel="noopener">API ↗</a>
+    </div>
+  </header>
+
   <div class="wrap">
-    <header>
-      <div class="brand">
-        <div class="logo">D</div>
-        <div>
-          <h1>Dispatch</h1>
-          <p>Support-ticket triage for digital finance &middot; SUST CSE Carnival 2026</p>
-        </div>
-      </div>
-      <div class="status">
-        <span class="dot" id="dot"></span>
-        <span id="statusText">checking API…</span>
-      </div>
-    </header>
+    <section class="hero">
+      <span class="eyebrow">SUST CSE Carnival 2026 · bKash</span>
+      <h1>Read one ticket.<br /><span class="grad">Route it in milliseconds.</span></h1>
+      <p>Dispatch reads a customer complaint and returns its case type, severity, the
+         owning team, and a two-second agent summary — flagging fraud and critical
+         cases for human review. Deterministic engine, English + Bangla, no LLM.</p>
+    </section>
+
+    <section class="stats">
+      <div class="stat"><div class="label">Triaged this session</div><div class="val" id="stTotal">0</div></div>
+      <div class="stat"><div class="label">Flagged for review</div><div class="val" id="stReview" style="color:var(--critical)">0</div></div>
+      <div class="stat"><div class="label">Avg. confidence</div><div class="val" id="stConf">—</div></div>
+    </section>
 
     <div class="grid">
-      <!-- Composer -->
-      <section class="card">
-        <h2>Incoming ticket</h2>
-
-        <div class="samples" id="samples"></div>
-
-        <div class="row">
-          <div>
-            <label for="ticket_id">Ticket ID</label>
-            <input id="ticket_id" value="T-001" />
-          </div>
-          <div>
-            <label for="channel">Channel</label>
-            <select id="channel">
-              <option value="app">app</option>
-              <option value="sms">sms</option>
-              <option value="call_center">call_center</option>
-              <option value="merchant_portal">merchant_portal</option>
-            </select>
-          </div>
-          <div>
-            <label for="locale">Locale</label>
-            <select id="locale">
-              <option value="en">en</option>
-              <option value="bn">bn</option>
-              <option value="mixed">mixed</option>
-            </select>
-          </div>
+      <!-- composer -->
+      <section class="panel">
+        <div class="panel-h">
+          <div class="t"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H7l-3 3z"/></svg> New ticket</div>
+          <span class="kbd">Ctrl ↵</span>
         </div>
+        <div class="panel-b">
+          <p class="field-label">Quick samples</p>
+          <div class="samples" id="samples"></div>
 
-        <label for="message">Customer message</label>
-        <textarea id="message" placeholder="e.g. I sent 5000 taka to a wrong number this morning, please help me get it back">I sent 5000 taka to a wrong number this morning, please help me get it back</textarea>
+          <div class="two-col">
+            <div>
+              <p class="field-label">Channel</p>
+              <div class="seg" id="segChannel"></div>
+            </div>
+            <div>
+              <p class="field-label">Locale</p>
+              <div class="seg" id="segLocale"></div>
+            </div>
+          </div>
 
-        <button class="btn" id="go">Classify ticket</button>
+          <p class="field-label">Ticket ID</p>
+          <input type="text" id="ticketId" value="T-001" spellcheck="false" />
+
+          <p class="field-label" style="margin-top:18px">Customer message</p>
+          <div class="ta-wrap">
+            <textarea id="message" maxlength="2000" placeholder="Paste the customer's message…">I sent 5000 taka to a wrong number this morning, please help me get it back</textarea>
+            <span class="counter" id="counter">0</span>
+          </div>
+
+          <button class="cta" id="go"><span class="spin"></span><span id="goTxt">Classify ticket</span></button>
+        </div>
       </section>
 
-      <!-- Result -->
-      <section class="card">
-        <h2>Triage result</h2>
-
-        <div class="empty" id="empty">
-          Submit a ticket to see its case type, severity, owning department,<br />
-          a neutral agent summary, and whether a human must review it.
+      <!-- result -->
+      <section class="panel">
+        <div class="panel-h">
+          <div class="t"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/><circle cx="12" cy="12" r="5"/></svg> Triage result</div>
         </div>
-
-        <div class="result" id="result">
-          <div class="tid">Ticket <b id="r_tid"></b></div>
-
-          <div class="review" id="review">
-            <span class="ico">⚠</span>
-            <span><b>Human review required</b> — escalated for immediate agent attention.</span>
+        <div class="res-body">
+          <!-- empty -->
+          <div class="empty" id="empty">
+            <div class="scope">
+              <svg viewBox="0 0 92 92" fill="none">
+                <circle cx="46" cy="46" r="44" stroke="rgba(255,255,255,.07)"/>
+                <circle cx="46" cy="46" r="30" stroke="rgba(255,255,255,.07)"/>
+                <circle cx="46" cy="46" r="16" stroke="rgba(255,255,255,.07)"/>
+                <g class="sweep"><path d="M46 46 L46 2 A44 44 0 0 1 84 30 Z" fill="url(#sg)"/></g>
+                <circle cx="46" cy="46" r="2.5" fill="var(--accent-2)"/>
+                <defs><linearGradient id="sg" x1="46" y1="46" x2="86" y2="16"><stop stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+              </svg>
+            </div>
+            <p>Submit a ticket to see its case type, severity, routing path, and a neutral agent summary.</p>
           </div>
 
-          <div class="badges">
-            <span class="badge type" id="r_type"></span>
-            <span class="badge sev" id="r_sev"></span>
-            <span class="badge dept" id="r_dept"></span>
+          <!-- skeleton -->
+          <div class="skeleton" id="skeleton">
+            <div class="sk" style="width:55%;height:24px"></div>
+            <div class="sk" style="width:30%"></div>
+            <div class="sk" style="width:80%;margin-top:26px"></div>
+            <div class="sk" style="width:70%"></div>
+            <div class="sk" style="width:90%;margin-top:26px;height:48px"></div>
           </div>
 
-          <div class="field">
-            <div class="k">Agent summary</div>
-            <div class="v" id="r_summary"></div>
-          </div>
+          <!-- result -->
+          <div class="result" id="result">
+            <div class="res-top">
+              <div class="ctype anim" style="--d:.02s">
+                <div class="icon" id="rIcon"></div>
+                <div class="meta">
+                  <div class="k">Case type</div>
+                  <div class="v" id="rType"></div>
+                  <span class="tid-chip" id="rTid"></span>
+                </div>
+              </div>
+              <div class="ring anim" style="--d:.06s">
+                <svg width="92" height="92">
+                  <defs><linearGradient id="cgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent-2)"/></linearGradient></defs>
+                  <circle class="track" cx="46" cy="46" r="40"/>
+                  <circle class="bar" id="rRing" cx="46" cy="46" r="40"/>
+                </svg>
+                <div class="num"><b id="rConf">0%</b><span>confid.</span></div>
+              </div>
+            </div>
 
-          <div class="field">
-            <div class="conf-row"><span>Confidence</span><b id="r_conf_n"></b></div>
-            <div class="meter"><span id="r_conf_bar"></span></div>
-          </div>
+            <div class="chips anim" style="--d:.1s">
+              <span class="sev" id="rSev"><span class="sd"></span><span id="rSevTxt"></span></span>
+            </div>
 
-          <details>
-            <summary>Raw JSON response</summary>
-            <pre id="r_json"></pre>
-          </details>
+            <div class="review anim" id="review" style="--d:.12s">
+              <span class="rb"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
+              <span><b>Human review required</b> — escalated for immediate agent attention.</span>
+            </div>
+
+            <div class="flow anim" style="--d:.16s">
+              <p class="field-label">Routing path</p>
+              <div class="row">
+                <span class="node"><span><small>Channel</small><span id="rChan">app</span></span></span>
+                <span class="arrow"><svg viewBox="0 0 20 14"><line class="dash" x1="0" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.6"/><path d="M12 3l5 4-5 4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="node"><span><small>Case</small><span id="rCase"></span></span></span>
+                <span class="arrow"><svg viewBox="0 0 20 14"><line class="dash" x1="0" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.6"/><path d="M12 3l5 4-5 4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span class="node dest"><span><small>Department</small><span id="rDept"></span></span></span>
+              </div>
+            </div>
+
+            <div class="summary anim" style="--d:.2s">
+              <div class="k">Agent summary</div>
+              <div class="v" id="rSummary"></div>
+            </div>
+
+            <details class="anim" style="--d:.24s">
+              <summary>Raw JSON response</summary>
+              <pre id="rJson"></pre>
+            </details>
+          </div>
         </div>
       </section>
     </div>
 
+    <!-- triage feed -->
+    <section class="panel feed-wrap">
+      <div class="panel-h">
+        <div class="t"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h12"/></svg> Triage feed</div>
+        <span class="kbd" id="feedCount">0 tickets</span>
+      </div>
+      <div class="panel-b">
+        <div class="feed" id="feed"><div class="feed-empty">No tickets triaged yet — classify one above to populate the live feed.</div></div>
+      </div>
+    </section>
+
     <footer>
-      <a href="/docs" target="_blank">API docs</a> ·
-      <a href="/health" target="_blank">/health</a> ·
-      <span>Rules-based engine · no LLM · no GPU</span>
+      <a href="/">Console</a><span class="sep">·</span>
+      <a href="/docs" target="_blank" rel="noopener">API docs</a><span class="sep">·</span>
+      <a href="/health" target="_blank" rel="noopener">/health</a><span class="sep">·</span>
+      <span>Rules-based engine · no LLM · no GPU · EN + বাংলা</span>
     </footer>
   </div>
 
+  <div class="toast" id="toast"></div>
+
 <script>
-  const SAMPLES = [
-    "I sent 3000 to wrong number",
-    "Payment failed but balance deducted",
-    "Someone called asking my OTP, is that bKash?",
-    "Please refund my last transaction, I changed my mind",
-    "App crashed when I opened it",
-    "ভুল নাম্বারে ৫০০০ টাকা পাঠিয়ে ফেলেছি, ফেরত দরকার"
-  ];
+  const $ = (id) => document.getElementById(id);
+
   const PRETTY = {
-    wrong_transfer: "Wrong transfer",
-    payment_failed: "Payment failed",
-    refund_request: "Refund request",
-    phishing_or_social_engineering: "Phishing / social engineering",
-    other: "Other",
-    customer_support: "Customer support",
-    dispute_resolution: "Dispute resolution",
-    payments_ops: "Payments ops",
-    fraud_risk: "Fraud & risk"
+    wrong_transfer: "Wrong transfer", payment_failed: "Payment failed",
+    refund_request: "Refund request", phishing_or_social_engineering: "Phishing / social eng.",
+    other: "Other", customer_support: "Customer support", dispute_resolution: "Dispute resolution",
+    payments_ops: "Payments ops", fraud_risk: "Fraud & risk"
   };
+  const SEV_COLOR = { low: "var(--low)", medium: "var(--medium)", high: "var(--high)", critical: "var(--critical)" };
   const label = (v) => PRETTY[v] || v;
 
-  // Build sample chips
-  const chipBox = document.getElementById("samples");
+  const ICONS = {
+    wrong_transfer: '<path d="M15 14l5-5-5-5"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/>',
+    payment_failed: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="m15.5 14.5 3 3"/><path d="m18.5 14.5-3 3"/>',
+    refund_request: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+    phishing_or_social_engineering: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/>',
+    other: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>'
+  };
+
+  const SAMPLES = [
+    { t: "I sent 3000 to wrong number", c: "var(--high)", loc: "en" },
+    { t: "Payment failed but balance deducted", c: "var(--high)", loc: "en" },
+    { t: "Someone called asking my OTP, is that bKash?", c: "var(--critical)", loc: "en" },
+    { t: "Please refund my last transaction, I changed my mind", c: "var(--low)", loc: "en" },
+    { t: "App crashed when I opened it", c: "var(--low)", loc: "en" },
+    { t: "ভুল নাম্বারে ৫০০০ টাকা পাঠিয়ে ফেলেছি, ফেরত দরকার", c: "var(--high)", loc: "bn" }
+  ];
+
+  // state
+  let channel = "app", locale = "en";
+  const RING_C = 2 * Math.PI * 40;
+  const feed = [];
+
+  // build samples
   SAMPLES.forEach((s) => {
-    const c = document.createElement("span");
-    c.className = "chip";
-    c.textContent = s.length > 42 ? s.slice(0, 40) + "…" : s;
-    c.title = s;
-    c.onclick = () => { document.getElementById("message").value = s; };
-    chipBox.appendChild(c);
+    const el = document.createElement("button");
+    el.className = "sample";
+    el.innerHTML = `<span class="dot" style="background:${s.c}"></span><span class="s-txt">${s.t}</span>`;
+    el.onclick = () => { $("message").value = s.t; setSeg("segLocale", s.loc); locale = s.loc; updateCounter(); };
+    $("samples").appendChild(el);
   });
 
-  // Health check
+  // segmented controls
+  function buildSeg(host, opts, current, onPick) {
+    opts.forEach((o) => {
+      const b = document.createElement("button");
+      b.textContent = o; b.dataset.v = o;
+      if (o === current) b.classList.add("on");
+      b.onclick = () => { setSeg(host, o); onPick(o); };
+      $(host).appendChild(b);
+    });
+  }
+  function setSeg(host, val) {
+    [...$(host).children].forEach((b) => b.classList.toggle("on", b.dataset.v === val));
+  }
+  buildSeg("segChannel", ["app", "sms", "call_center", "merchant_portal"], channel, (v) => (channel = v));
+  buildSeg("segLocale", ["en", "bn", "mixed"], locale, (v) => (locale = v));
+
+  // counter
+  function updateCounter() { $("counter").textContent = $("message").value.length; }
+  $("message").addEventListener("input", updateCounter);
+  updateCounter();
+
+  // toast
+  let toastT;
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.classList.add("on");
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("on"), 3500);
+  }
+
+  // health
   async function ping() {
-    const dot = document.getElementById("dot");
-    const txt = document.getElementById("statusText");
     try {
-      const r = await fetch("/health");
-      const j = await r.json();
-      dot.className = "dot up";
-      txt.textContent = "API online · v" + (j.version || "?");
-    } catch {
-      dot.className = "dot down";
-      txt.textContent = "API offline";
-    }
+      const r = await fetch("/health"); const j = await r.json();
+      $("pulse").className = "pulse up"; $("healthTxt").textContent = "API online · v" + (j.version || "?");
+    } catch { $("pulse").className = "pulse down"; $("healthTxt").textContent = "API offline"; }
   }
   ping();
 
-  // Classify
-  const btn = document.getElementById("go");
-  btn.onclick = async () => {
-    const body = {
-      ticket_id: document.getElementById("ticket_id").value || "T-001",
-      channel: document.getElementById("channel").value,
-      locale: document.getElementById("locale").value,
-      message: document.getElementById("message").value
-    };
-    btn.disabled = true;
-    btn.textContent = "Classifying…";
-    try {
-      const r = await fetch("/sort-ticket", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-      const d = await r.json();
-      render(d);
-    } catch (e) {
-      alert("Request failed: " + e);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Classify ticket";
-    }
-  };
-
-  function render(d) {
-    document.getElementById("empty").style.display = "none";
-    document.getElementById("result").classList.add("show");
-
-    document.getElementById("r_tid").textContent = d.ticket_id;
-    document.getElementById("r_type").textContent = label(d.case_type);
-
-    const sev = document.getElementById("r_sev");
-    sev.textContent = d.severity.toUpperCase();
-    sev.className = "badge sev " + d.severity;
-
-    document.getElementById("r_dept").textContent = label(d.department);
-    document.getElementById("r_summary").textContent = d.agent_summary;
-
-    const pct = Math.round(d.confidence * 100);
-    document.getElementById("r_conf_n").textContent = pct + "%";
-    document.getElementById("r_conf_bar").style.width = pct + "%";
-
-    document.getElementById("review").className = "review" + (d.human_review_required ? " on" : "");
-    document.getElementById("r_json").textContent = JSON.stringify(d, null, 2);
+  // count-up
+  function countUp(el, to, suffix) {
+    const start = performance.now(), dur = 750;
+    (function step(now) {
+      const p = Math.min((now - start) / dur, 1);
+      el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))) + suffix;
+      if (p < 1) requestAnimationFrame(step);
+    })(performance.now());
   }
 
-  // Allow Ctrl+Enter to submit
-  document.getElementById("message").addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") btn.click();
-  });
+  // classify
+  const go = $("go");
+  async function classify() {
+    const body = {
+      ticket_id: $("ticketId").value || "T-001",
+      channel, locale, message: $("message").value
+    };
+    if (!body.message.trim()) { toast("Enter a customer message first."); return; }
+
+    go.classList.add("loading"); go.disabled = true; $("goTxt").textContent = "Analyzing…";
+    $("empty").style.display = "none"; $("result").classList.remove("on"); $("skeleton").classList.add("on");
+
+    const started = performance.now();
+    try {
+      const r = await fetch("/sort-ticket", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const d = await r.json();
+      const wait = Math.max(0, 480 - (performance.now() - started)); // let the skeleton breathe
+      setTimeout(() => render(d, body), wait);
+    } catch (e) {
+      $("skeleton").classList.remove("on"); $("empty").style.display = "flex";
+      toast("Request failed: " + e.message);
+    } finally {
+      go.classList.remove("loading"); go.disabled = false; $("goTxt").textContent = "Classify ticket";
+    }
+  }
+  go.onclick = classify;
+  $("message").addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") classify(); });
+
+  function render(d, req) {
+    $("skeleton").classList.remove("on");
+    const res = $("result"); res.classList.remove("on"); void res.offsetWidth; res.classList.add("on");
+
+    $("rIcon").innerHTML = `<svg viewBox="0 0 24 24">${ICONS[d.case_type] || ICONS.other}</svg>`;
+    $("rType").textContent = label(d.case_type);
+    $("rTid").textContent = d.ticket_id;
+
+    // ring
+    const pct = Math.round(d.confidence * 100);
+    const ring = $("rRing");
+    ring.style.strokeDasharray = RING_C; ring.style.strokeDashoffset = RING_C;
+    setTimeout(() => { ring.style.strokeDashoffset = RING_C * (1 - d.confidence); }, 60);
+    countUp($("rConf"), pct, "%");
+
+    // severity
+    $("rSev").dataset.s = d.severity;
+    $("rSevTxt").textContent = d.severity.toUpperCase() + " severity";
+
+    // review
+    $("review").classList.toggle("on", d.human_review_required);
+
+    // routing
+    $("rChan").textContent = req.channel;
+    $("rCase").textContent = label(d.case_type);
+    $("rDept").textContent = label(d.department);
+
+    // summary + json
+    $("rSummary").textContent = d.agent_summary;
+    $("rJson").textContent = JSON.stringify(d, null, 2);
+
+    pushFeed(d, req);
+    // prep next id
+    const m = (req.ticket_id || "").match(/^(\D*)(\d+)$/);
+    if (m) $("ticketId").value = m[1] + String(+m[2] + 1).padStart(m[2].length, "0");
+  }
+
+  function pushFeed(d, req) {
+    feed.unshift({ ...d, msg: req.message, time: new Date() });
+    const host = $("feed"); host.innerHTML = "";
+    feed.slice(0, 12).forEach((f) => {
+      const row = document.createElement("div");
+      row.className = "feed-row";
+      const hh = f.time.toTimeString().slice(0, 8);
+      row.innerHTML = `
+        <span class="fd" style="background:${SEV_COLOR[f.severity]}"></span>
+        <span class="ftype">${label(f.case_type)}</span>
+        <span class="fmsg">${f.msg.replace(/</g, "&lt;")}</span>
+        <span class="fsev" style="color:${SEV_COLOR[f.severity]}">${f.severity}</span>
+        <span class="${f.human_review_required ? "fflag" : "ftime"}">${f.human_review_required ? "⚑ review" : ""}</span>
+        <span class="ftime">${hh}</span>`;
+      host.appendChild(row);
+    });
+    $("feedCount").textContent = feed.length + (feed.length === 1 ? " ticket" : " tickets");
+
+    // stats
+    const total = feed.length;
+    const review = feed.filter((f) => f.human_review_required).length;
+    const avg = Math.round((feed.reduce((s, f) => s + f.confidence, 0) / total) * 100);
+    countUp($("stTotal"), total, "");
+    countUp($("stReview"), review, "");
+    $("stConf").textContent = avg + "%";
+  }
 </script>
 </body>
 </html>
