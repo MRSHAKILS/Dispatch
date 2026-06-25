@@ -48,9 +48,9 @@ the amount parser understands Bangla numerals like `৪০০০`).
 
 ## Live demo
 
-- **Dashboard (Triage Console):** `https://<your-app>.onrender.com/`
-- **Health:** `https://<your-app>.onrender.com/health`
-- **Interactive API docs (Swagger):** `https://<your-app>.onrender.com/docs`
+- **Dashboard (Triage Console):** `https://dispatch-6fz9.onrender.com/`
+- **Health:** `https://dispatch-6fz9.onrender.com/health`
+- **Interactive API docs (Swagger):** `https://dispatch-6fz9.onrender.com/docs`
 
 The dashboard is a zero-dependency single page served by the API itself: paste a
 message, pick a channel/locale, and see the case type, a colour-coded severity
