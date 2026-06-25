@@ -1,0 +1,16 @@
+# Render Blueprint for Dispatch.
+# In the Render dashboard: New + -> Blueprint -> connect this repo.
+# Render reads this file and provisions the service automatically.
+services:
+  - type: web
+    name: dispatch
+    runtime: python
+    plan: free
+    region: singapore            # closest free region to Bangladesh; change if needed
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
