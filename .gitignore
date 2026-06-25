@@ -22,6 +22,10 @@ env/
 .coverage
 htmlcov/
 
+# Local-only alt-deploy configs (Render uses render.yaml)
+Dockerfile
+Procfile
+
 # Editor / OS
 .vscode/
 .idea/

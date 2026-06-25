@@ -215,9 +215,12 @@ same build/start commands above and set the health check path to `/health`.
 
 ### Other platforms
 
-- **Docker / Fly.io / Cloud Run / EC2:** a [`Dockerfile`](Dockerfile) is included.
-  `docker build -t dispatch . && docker run -p 8000:8000 dispatch`.
-- **Railway / Heroku-style:** a [`Procfile`](Procfile) is included.
+Dispatch is a standard ASGI app, so any host that can run a Python web process
+works. Use the same start command on Railway, Fly.io, Cloud Run, or EC2:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
 
 No environment variables are required. `.env.example` documents the (currently
 unused) slots reserved for an optional future LLM provider.
@@ -251,13 +254,6 @@ curl -X POST http://localhost:8000/sort-ticket \
   -d '{"ticket_id":"T-001","message":"I sent 3000 to wrong number"}'
 ```
 
-Container alternative:
-
-```bash
-docker build -t dispatch .
-docker run -p 8000:8000 dispatch
-```
-
 ## Project structure
 
 ```
@@ -272,7 +268,7 @@ static/
 tests/
   test_classifier.py   Engine + safety + 5 public samples
   test_api.py          Endpoint contract tests
-Dockerfile · render.yaml · Procfile · requirements*.txt · runtime.txt · .env.example
+render.yaml · requirements*.txt · runtime.txt · .env.example
 ```
 
 ## Submission details
