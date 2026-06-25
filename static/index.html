@@ -77,12 +77,14 @@
 
   /* ---------- nav ---------- */
   .nav {
-    position: sticky; top: 0; z-index: 50;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 28px; margin: 0 -28px;
+    position: sticky; top: 0; z-index: 50; width: 100%;
     border-bottom: 1px solid var(--border);
     background: color-mix(in srgb, var(--bg) 80%, transparent);
     backdrop-filter: blur(12px) saturate(1.4);
+  }
+  .nav-inner {
+    max-width: 1160px; margin: 0 auto; padding: 16px 28px;
+    display: flex; align-items: center; justify-content: space-between;
   }
   .brand { display: flex; align-items: center; gap: 11px; }
   .mark { width: 30px; height: 30px; border-radius: var(--r-sm); flex: none; display: grid; place-items: center;
@@ -138,11 +140,11 @@
   .lbl { font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); margin: 0 0 11px; }
   .samples { display: grid; gap: 7px; margin-bottom: 24px; }
   .sample { text-align: left; cursor: pointer; border: 1px solid var(--border); border-radius: var(--r-sm);
-    background: var(--surface); padding: 10px 12px; display: flex; gap: 11px; align-items: center;
+    background: var(--surface); padding: 10px 12px; display: flex; gap: 11px; align-items: center; min-width: 0;
     transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease); color: var(--text); }
   .sample:hover { border-color: var(--border-strong); background: var(--n-50); }
   .sample .sd { width: 6px; height: 6px; border-radius: 50%; flex: none; }
-  .sample .s-txt { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .sample .s-txt { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
   /* segmented */
   .two { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: end; margin-bottom: 18px; }
@@ -259,6 +261,7 @@
   .feed-head { padding: 0 4px 12px; border-bottom: 1px solid var(--border); }
   .feed-head span { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); }
   .feed-empty { color: var(--text-faint); font-size: 13px; padding: 26px 0; text-align: center; }
+  .feed-head > span, .feed-row > span { min-width: 0; }
   .feed-row { padding: 13px 4px; border-bottom: 1px solid var(--border); font-size: 13px; animation: rise var(--base) var(--ease) both; }
   .feed-row .fd { width: 7px; height: 7px; border-radius: 50%; }
   .feed-row .ft { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -286,7 +289,7 @@
 
   @media (max-width: 560px) {
     .wrap { padding: 0 18px 72px; }
-    .nav { padding: 14px 18px; margin: 0 -18px; }
+    .nav-inner { padding: 14px 18px; }
     .brand .tag, .brand .div { display: none; }
     .hero { padding: 52px 0 24px; }
     .metric { padding-right: 18px; margin-right: 0; }
@@ -303,15 +306,17 @@
   <div class="grain"></div>
 
   <header class="nav">
-    <div class="brand">
-      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h10"/><path d="M4 19h7"/><path d="m16 16 4 3-4 3"/></svg></div>
-      <span class="name">Dispatch</span>
-      <span class="div"></span>
-      <span class="tag">Triage&nbsp;Console</span>
-    </div>
-    <div class="right">
-      <span class="health"><span class="dot" id="dot"></span><span id="healthTxt">connecting</span></span>
-      <a class="navlink" href="/docs" target="_blank" rel="noopener">API</a>
+    <div class="nav-inner">
+      <div class="brand">
+        <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h10"/><path d="M4 19h7"/><path d="m16 16 4 3-4 3"/></svg></div>
+        <span class="name">Dispatch</span>
+        <span class="div"></span>
+        <span class="tag">Triage&nbsp;Console</span>
+      </div>
+      <div class="right">
+        <span class="health"><span class="dot" id="dot"></span><span id="healthTxt">connecting</span></span>
+        <a class="navlink" href="/docs" target="_blank" rel="noopener">API</a>
+      </div>
     </div>
   </header>
 
