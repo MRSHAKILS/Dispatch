@@ -5,9 +5,6 @@ message and instantly answers four questions about it — *what kind of problem 
 this, how serious is it, which team should handle it,* and *what is a two-second
 summary an agent can read* — then raises a flag whenever a human must step in.
 
-Built for the **SUST CSE Carnival 2026 — Codex Community Hackathon** (QueueStorm
-warmup task).
-
 > **Engine:** transparent, deterministic, rules-based · **No GPU · No secrets · No LLM required**
 
 ---
@@ -107,7 +104,7 @@ Try it from the command line:
 ```bash
 curl -X POST https://<your-app>.onrender.com/sort-ticket \
   -H "Content-Type: application/json" \
-  -d '{"ticket_id":"T-003","message":"Someone called asking my OTP, is that bKash?"}'
+  -d '{"ticket_id":"T-003","message":"Someone called asking for my OTP to verify my account"}'
 ```
 
 ## How classification works
@@ -118,7 +115,7 @@ transfer → payment failed → refund → other).
 
 | `case_type` | Triggered by (examples) |
 | --- | --- |
-| `phishing_or_social_engineering` | OTP / PIN / password requests, "someone called", "is that bKash", scam, lottery, suspicious link |
+| `phishing_or_social_engineering` | OTP / PIN / password requests, "someone called", "claiming to be", scam, lottery, suspicious link |
 | `wrong_transfer` | "wrong number", "wrong recipient", "sent by mistake", "ভুল নাম্বার" |
 | `payment_failed` | "payment failed", "balance deducted", "debited but", "টাকা কেটে" |
 | `refund_request` | "refund", "money back", "changed my mind", "রিফান্ড" |
@@ -149,7 +146,7 @@ category and how far it beats the runner-up (0.0–1.0).
 | --- | --- | --- | --- |
 | 1 | I sent 3000 to wrong number | `wrong_transfer` | high |
 | 2 | Payment failed but balance deducted | `payment_failed` | high |
-| 3 | Someone called asking my OTP, is that bKash? | `phishing_or_social_engineering` | critical |
+| 3 | Someone called asking for my OTP to verify my account | `phishing_or_social_engineering` | critical |
 | 4 | Please refund my last transaction, I changed my mind | `refund_request` | low |
 | 5 | App crashed when I opened it | `other` | low |
 

@@ -5,11 +5,11 @@ import pytest
 from app.classifier import classify
 from app.safety import build_summary, enforce_safety, is_safe
 
-# (message, expected_case_type, expected_severity) — straight from the task PDF.
+# (message, expected_case_type, expected_severity) — the five public sample cases.
 PUBLIC_SAMPLES = [
     ("I sent 3000 to wrong number", "wrong_transfer", "high"),
     ("Payment failed but balance deducted", "payment_failed", "high"),
-    ("Someone called asking my OTP, is that bKash?", "phishing_or_social_engineering", "critical"),
+    ("Someone called asking for my OTP to verify my account", "phishing_or_social_engineering", "critical"),
     ("Please refund my last transaction, I changed my mind", "refund_request", "low"),
     ("App crashed when I opened it", "other", "low"),
 ]

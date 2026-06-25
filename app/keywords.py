@@ -6,9 +6,9 @@ to the concrete phrases below. Each ``case_type`` owns a list of
 match on word boundaries, while phrases and Bangla (bn) tokens match as
 substrings (see ``app.classifier._matches``).
 
-Bangla and "mixed" locale support is first-class: bKash customers frequently
-write in Bangla or Banglish, so the most common Bangla phrases are included
-inline next to their English counterparts.
+Bangla and "mixed" locale support is first-class: customers frequently write in
+Bangla or Banglish, so the most common Bangla phrases are included inline next to
+their English counterparts.
 """
 
 # --------------------------------------------------------------------------- #
@@ -41,8 +41,8 @@ CASE_KEYWORDS: dict[str, list[tuple[str, int]]] = {
         ("someone called", 2),
         ("unknown number", 2),
         ("called me", 1),
-        ("is that bkash", 3),
         ("claiming to be", 3),
+        ("is this the official", 3),
         ("pretending to be", 3),
         ("posing as", 3),
         ("asked for my", 3),
@@ -84,8 +84,6 @@ CASE_KEYWORDS: dict[str, list[tuple[str, int]]] = {
         ("wrong account", 3),
         ("wrong person", 3),
         ("wrong mobile", 3),
-        ("wrong bkash", 3),
-        ("wrong nagad", 3),
         ("to the wrong", 2),
         ("to a wrong", 2),
         ("to wrong", 2),
